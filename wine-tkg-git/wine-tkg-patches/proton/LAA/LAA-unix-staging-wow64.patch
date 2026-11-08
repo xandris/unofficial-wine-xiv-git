@@ -91,10 +91,10 @@ index ef1d9ef5005..c168eccda38 100644
 +
  #endif /* __NTDLL_UNIX_PRIVATE_H */
 diff --git a/dlls/ntdll/unix/virtual.c b/dlls/ntdll/unix/virtual.c
-index 38cab90..40e2d9d 100644
+index b61da59918f..cf7c43421d1 100644
 --- a/dlls/ntdll/unix/virtual.c
 +++ b/dlls/ntdll/unix/virtual.c
-@@ -4069,6 +4069,25 @@ static struct thread_data *init_thread_data( void *ptr )
+@@ -3631,6 +3631,25 @@ static struct thread_data *init_thread_data( void *ptr )
      return data;
  }
  
@@ -120,24 +120,24 @@ index 38cab90..40e2d9d 100644
  /* enable use of a large address space when allowed by the application */
  static void set_large_address_space(void)
  {
-@@ -4091,7 +4110,7 @@ static void set_large_address_space(void)
-             if (use_aslr()) free_reserved_memory( 0, (char *)0x7ffe0000 );
- #endif
-         }
--        else if (main_image_info.ImageCharacteristics & IMAGE_FILE_LARGE_ADDRESS_AWARE)
-+        else if (is_large_address_aware())
+@@ -3660,7 +3679,7 @@ static void set_large_address_space(void)
+ 
+     if (is_win64)
+     {
+-        if (main_image_info.ImageCharacteristics & IMAGE_FILE_LARGE_ADDRESS_AWARE)
++        if (is_large_address_aware())
          {
              user_space_wow_limit = limit_4g - 1;
-             /* reserve space for top-down allocations; some apps break if the entire high 2G is available */
-@@ -4101,7 +4120,7 @@ static void set_large_address_space(void)
+             /* block a bit of top memory: some apps break if the entire high 2G is available */
+@@ -3672,7 +3691,7 @@ static void set_large_address_space(void)
+             set_mem_area_state( (void *)0x7fff0000, 0x10000, AREA_BLOCKED );
+         }
      }
-     else
+-    else if (!(main_image_info.ImageCharacteristics & IMAGE_FILE_LARGE_ADDRESS_AWARE))
++    else if (!(is_large_address_aware()))
      {
--        if (!(main_image_info.ImageCharacteristics & IMAGE_FILE_LARGE_ADDRESS_AWARE)) return;
-+        if (!is_large_address_aware()) return;
-         free_reserved_memory( (char *)0x80000000, address_space_limit );
-     }
-     user_space_limit = working_set_limit = address_space_limit;
+         reserve_area( (void *)limit_2g, host_addr_space_limit );
+         return;
 diff --git a/dlls/wow64/system.c b/dlls/wow64/system.c
 index eb57d35f41e..8b108b406d6 100644
 --- a/dlls/wow64/system.c
